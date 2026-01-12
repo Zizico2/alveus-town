@@ -1,0 +1,19 @@
+[
+  {
+    "id": 1,
+    "name": "alveus_idle::BuildingEntrance",
+    "type": "class",
+    "useAs": [
+      "property"
+    ],
+    "color": "#000000",
+    "drawFill": true,
+    "members": [
+      {
+        "name": "building_entrance",
+        "type": "string",
+        "value": ""
+      }
+    ]
+  }
+]

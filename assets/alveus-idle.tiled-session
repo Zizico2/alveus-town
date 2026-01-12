@@ -1,0 +1,20 @@
+{
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "Tiles.tsx": {
+            "dynamicWrapping": false
+        },
+        "objects.tsx": {
+            "dynamicWrapping": true
+        }
+    },
+    "last.objectTypesPath": "/home/bernardo/Projects/alveus-idle/assets/tiled_types.json",
+    "openFiles": [
+    ],
+    "project": "alveus-idle.tiled-project",
+    "property.type": "alveus_idle::BuildingEntrance",
+    "recentFiles": [
+    ]
+}

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="32" tileheight="32" infinite="1" nextlayerid="6" nextobjectid="6">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="50" height="50" tilewidth="32" tileheight="32" infinite="1" nextlayerid="9" nextobjectid="7">
  <tileset firstgid="1" source="Tiles.tsx"/>
  <tileset firstgid="4" source="objects.tsx"/>
- <layer id="1" name="Tile Layer 1" width="50" height="50">
+ <layer id="1" name="Terrain" width="50" height="50">
   <data encoding="csv">
    <chunk x="0" y="0" width="16" height="16">
 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
@@ -168,7 +168,18 @@
 </chunk>
   </data>
  </layer>
- <objectgroup id="5" name="Object Layer 1">
+ <objectgroup id="8" name="Terrain Metadata">
+  <object id="6" x="1056" y="1120" width="64" height="32">
+   <properties>
+    <property name="nutrition-house" type="class" propertytype="alveus_idle::BuildingEntrance">
+     <properties>
+      <property name="building_entrance" value="nutrition-house"/>
+     </properties>
+    </property>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="5" name="Buildings">
   <object id="5" gid="4" x="992" y="1120" width="200" height="284"/>
  </objectgroup>
 </map>
