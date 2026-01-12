@@ -63,8 +63,9 @@ fn main() {
             )
                 .chain(),
         )
+        .add_systems(Update, validate_and_snap_entrances)
         // Observers for specific events
-        .add_observer(on_add_building_entrance)
+        // .add_observer(on_add_building_entrance)
         .run();
 }
 
@@ -78,7 +79,10 @@ fn setup_scene(
 ) {
     // Spawn Map
     commands
-        .spawn(TiledMap(asset_server.load("map.tmx")))
+        .spawn((
+            TiledMap(asset_server.load("map.tmx")),
+            TilemapAnchor::TopLeft,
+        ))
         .observe(on_map_created);
 
     // Spawn Player
@@ -204,8 +208,64 @@ fn update_player_transform(
 
 // --- Observers / Events ---
 
-fn on_add_building_entrance(trigger: On<Add, BuildingEntrance>) {
-    info!("Added BuildingEntrance component: {:?}", trigger.event());
+// fn on_add_building_entrance(trigger: On<Add, BuildingEntrance>) {
+//     info!("Added BuildingEntrance component: {:?}", trigger.event());
+// }
+fn validate_and_snap_entrances(
+    mut commands: Commands,
+    // We filter for entities that have the entrance data but NO grid location yet
+    query: Query<
+        (Entity, &Transform, &BuildingEntrance),
+        (Added<BuildingEntrance>, Without<TilePosition>),
+    >,
+) {
+    const TILE_SIZE: f32 = 32.0;
+    const EPSILON: f32 = 0.05; // A small buffer for floating point errors
+
+    for (entity, transform, entrance) in query.iter() {
+        let x = transform.translation.x;
+        let y = transform.translation.y;
+        info!(
+            "Validating entrance '{}' at position [x:{:.2}, y:{:.2}]",
+            entrance.building_entrance, x, y
+        );
+
+        // Calculate how far we are from the nearest multiple of 32
+        let rem_x = x.rem_euclid(TILE_SIZE);
+        let rem_y = y.rem_euclid(TILE_SIZE);
+
+        // Distance to nearest grid line (handles cases like 31.99 vs 0.01)
+        let dist_x = rem_x.min(TILE_SIZE - rem_x);
+        let dist_y = rem_y.min(TILE_SIZE - rem_y);
+
+        if dist_x >= EPSILON || dist_y >= EPSILON {
+            // HARD STOP
+            panic!(
+                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nPosition: [x:{:.2}, y:{:.2}]\nIssue: Not aligned to {}-pixel grid.\nFix: Open Tiled, enable 'Snap to Grid', and move the object.\n",
+                entrance.building_entrance, x, y, TILE_SIZE
+            );
+        }
+
+        // Safe conversion
+        // TODO: ? don't use "as"
+        let grid_x = (x / TILE_SIZE).floor() as u32;
+        let grid_y = (y / TILE_SIZE).floor() as u32;
+
+        let tile_position = TilePosition {
+            x: grid_x,
+            y: grid_y,
+        };
+        info!(
+            "Snapping entrance '{}' to grid position [{}, {}]",
+            entrance.building_entrance, grid_x, grid_y
+        );
+        commands.entity(entity).insert(tile_position);
+
+        debug!(
+            "Snapped entrance '{}' to grid [{}, {}]",
+            entrance.building_entrance, grid_x, grid_y
+        );
+    }
 }
 
 /// Post-process map initialization (finding specific tiles, etc).
