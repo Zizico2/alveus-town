@@ -18,6 +18,11 @@ struct TilePosition {
     y: u32,
 }
 
+#[derive(Component, Debug)]
+struct TilePositionArray {
+    positions: Vec<TilePosition>,
+}
+
 #[derive(Component)]
 struct MovementCooldown(Timer);
 
@@ -81,7 +86,7 @@ fn setup_scene(
     commands
         .spawn((
             TiledMap(asset_server.load("map.tmx")),
-            TilemapAnchor::TopLeft,
+            TilemapAnchor::BottomLeft,
         ))
         .observe(on_map_created);
 
@@ -201,8 +206,8 @@ fn update_player_transform(
     mut query: Query<(&TilePosition, &mut Transform), (With<Player>, Changed<TilePosition>)>,
 ) {
     for (tile_position, mut transform) in query.iter_mut() {
-        transform.translation.x = (tile_position.x * TILE_SIZE) as f32;
-        transform.translation.y = (tile_position.y * TILE_SIZE) as f32;
+        transform.translation.x = (tile_position.x * TILE_SIZE) as f32 + TILE_SIZE as f32 / 2.0;
+        transform.translation.y = (tile_position.y * TILE_SIZE) as f32 + TILE_SIZE as f32 / 2.0;
     }
 }
 
@@ -213,58 +218,91 @@ fn update_player_transform(
 // }
 fn validate_and_snap_entrances(
     mut commands: Commands,
-    // We filter for entities that have the entrance data but NO grid location yet
+    // Added TiledObject to get width/height.
+    // If your size data is in 'BuildingEntrance', access it there instead.
     query: Query<
-        (Entity, &Transform, &BuildingEntrance),
-        (Added<BuildingEntrance>, Without<TilePosition>),
+        (Entity, &Transform, &BuildingEntrance, &TiledObject),
+        (Added<BuildingEntrance>, Without<TilePositionArray>),
     >,
 ) {
     const TILE_SIZE: f32 = 32.0;
-    const EPSILON: f32 = 0.05; // A small buffer for floating point errors
+    const EPSILON: f32 = 0.05;
 
-    for (entity, transform, entrance) in query.iter() {
+    for (entity, transform, entrance, tiled_object) in query.iter() {
         let x = transform.translation.x;
         let y = transform.translation.y;
-        info!(
-            "Validating entrance '{}' at position [x:{:.2}, y:{:.2}]",
-            entrance.building_entrance, x, y
-        );
 
-        // Calculate how far we are from the nearest multiple of 32
+        // 1. Validate Alignment (Origin)
+        // ----------------------------------------------------
         let rem_x = x.rem_euclid(TILE_SIZE);
         let rem_y = y.rem_euclid(TILE_SIZE);
 
-        // Distance to nearest grid line (handles cases like 31.99 vs 0.01)
         let dist_x = rem_x.min(TILE_SIZE - rem_x);
         let dist_y = rem_y.min(TILE_SIZE - rem_y);
 
         if dist_x >= EPSILON || dist_y >= EPSILON {
-            // HARD STOP
             panic!(
-                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nPosition: [x:{:.2}, y:{:.2}]\nIssue: Not aligned to {}-pixel grid.\nFix: Open Tiled, enable 'Snap to Grid', and move the object.\n",
+                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nPosition: [x:{:.2}, y:{:.2}]\nIssue: Not aligned to {}-pixel grid.\n",
                 entrance.building_entrance, x, y, TILE_SIZE
             );
         }
 
-        // Safe conversion
-        // TODO: ? don't use "as"
-        let grid_x = (x / TILE_SIZE).floor() as u32;
-        let grid_y = (y / TILE_SIZE).floor() as u32;
-
-        let tile_position = TilePosition {
-            x: grid_x,
-            y: grid_y,
+        // 2. Validate Dimensions (Must be multiples of tile size)
+        // ----------------------------------------------------
+        // Tiled objects usually store size in pixels
+        let TiledObject::Rectangle { width, height } = tiled_object else {
+            panic!(
+                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nIssue: Unsupported TiledObject type for size validation.\n",
+                entrance.building_entrance
+            );
         };
-        info!(
-            "Snapping entrance '{}' to grid position [{}, {}]",
-            entrance.building_entrance, grid_x, grid_y
-        );
-        commands.entity(entity).insert(tile_position);
 
-        debug!(
-            "Snapped entrance '{}' to grid [{}, {}]",
-            entrance.building_entrance, grid_x, grid_y
+        if width % TILE_SIZE != 0.0 || height % TILE_SIZE != 0.0 {
+            panic!(
+                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nSize: [w:{}, h:{}]\nIssue: Dimensions are not multiples of tile size ({}).\n",
+                entrance.building_entrance, width, height, TILE_SIZE
+            );
+        }
+
+        // 3. Calculate All Occupied Tiles
+        // ----------------------------------------------------
+        // Fix for "as": Use round() instead of floor().
+        // If x is 31.99 (valid by epsilon), floor makes it 31 (wrong), round makes it 32 (correct).
+        let start_grid_x = (x / TILE_SIZE).round() as u32;
+        let start_grid_y = (y / TILE_SIZE).round() as u32;
+
+        let width_in_tiles = (width / TILE_SIZE).round() as u32;
+        let height_in_tiles = (height / TILE_SIZE).round() as u32;
+
+        let mut positions = Vec::with_capacity((width_in_tiles * height_in_tiles) as usize);
+
+        // Iterate through the dimensions to fill the vector
+        // NOTE: Tiled Y-coordinates can be tricky (Up vs Down).
+        // Standard 2D loops usually look like this:
+        for dx in 0..width_in_tiles {
+            for dy in 0..height_in_tiles {
+                positions.push(TilePosition {
+                    x: start_grid_x + dx,
+                    // Depending on your coordinate system (Y-Up vs Y-Down),
+                    // you might need `start_grid_y - dy` here.
+                    // Bevy is usually Y-Up, Tiled is Y-Down. Check your map loader settings.
+                    y: start_grid_y + dy,
+                });
+            }
+        }
+
+        info!(
+            "Snapping entrance '{}' to {} tiles starting at [{}, {}]",
+            entrance.building_entrance,
+            positions.len(),
+            start_grid_x,
+            start_grid_y
         );
+
+        // 4. Store the Array
+        commands
+            .entity(entity)
+            .insert(TilePositionArray { positions });
     }
 }
 
