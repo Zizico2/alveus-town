@@ -266,10 +266,15 @@ fn validate_and_snap_entrances(
 
         // 3. Calculate All Occupied Tiles
         // ----------------------------------------------------
-        // Fix for "as": Use round() instead of floor().
-        // If x is 31.99 (valid by epsilon), floor makes it 31 (wrong), round makes it 32 (correct).
+        
+        // Tiled 'Tile Objects' act as if their origin is Bottom-Left.
+        // We subtract 'height' to shift the origin to the Top-Left (or the logic start).
+        // TODO: somehow check `TilemapAnchor::BottomLeft` on the `TiledMap` to confirm this adjustment is needed.
+        let adjusted_y = y - height;
+
+
         let start_grid_x = (x / TILE_SIZE).round() as u32;
-        let start_grid_y = (y / TILE_SIZE).round() as u32;
+        let start_grid_y = (adjusted_y / TILE_SIZE).round() as u32;
 
         let width_in_tiles = (width / TILE_SIZE).round() as u32;
         let height_in_tiles = (height / TILE_SIZE).round() as u32;
@@ -298,6 +303,7 @@ fn validate_and_snap_entrances(
             start_grid_x,
             start_grid_y
         );
+        info!("Occupied Tiles: {:?}", positions);
 
         // 4. Store the Array
         commands

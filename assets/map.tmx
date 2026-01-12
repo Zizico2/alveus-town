@@ -169,7 +169,7 @@
   </data>
  </layer>
  <objectgroup id="8" name="Terrain Metadata">
-  <object id="6" x="1056" y="1120" width="64" height="32">
+  <object id="6" x="1024" y="1120" width="128" height="64">
    <properties>
     <property name="nutrition-house" type="class" propertytype="alveus_idle::BuildingEntrance">
      <properties>
