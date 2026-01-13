@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_ecs_tiled::prelude::*;
-use std::env;
+use std::{default, env};
 
 // --- Constants ---
 const TILE_SIZE: u32 = 32;
@@ -19,8 +19,14 @@ struct TilePosition {
 }
 
 #[derive(Component, Debug)]
-struct TilePositionArray {
-    positions: Vec<TilePosition>,
+enum TileGroup {
+    Rectangle(RectangleTileGroup),
+}
+
+#[derive(Component, Debug)]
+struct RectangleTileGroup {
+    bottom_left: TilePosition,
+    top_right: TilePosition,
 }
 
 #[derive(Component)]
@@ -29,10 +35,12 @@ struct MovementCooldown(Timer);
 #[derive(Component)]
 struct DisplayCurrentTile;
 
-#[derive(Component, Default, Debug, Reflect)]
+#[derive(Component, Debug, Reflect, Default)]
 #[reflect(Component, Default)]
-struct BuildingEntrance {
-    pub building_entrance: String,
+enum BuildingEntrance {
+    #[default]
+    NoEntrance,
+    NutritionHouse,
 }
 
 // --- Main ---
@@ -62,6 +70,8 @@ fn main() {
             Update,
             (
                 move_player,
+                check_player_enter_building,
+                handle_player_entering_building,
                 update_current_tile_display,
                 update_player_transform,
                 update_camera,
@@ -211,18 +221,55 @@ fn update_player_transform(
     }
 }
 
+/// check if player in building entrance
+fn check_player_enter_building(
+    player: Single<
+        (&TilePosition, Entity),
+        (
+            With<Player>,
+            Changed<TilePosition>,
+            Without<BuildingEntrance>,
+        ),
+    >,
+    entrances: Query<(&TileGroup, &BuildingEntrance)>,
+    mut commands: Commands,
+) {
+    let (player_pos, player_entity) = *player;
+
+    for (entrance_pos, entrance) in entrances.iter() {
+        match entrance_pos {
+            TileGroup::Rectangle(rect) => {
+                if player_pos.x >= rect.bottom_left.x
+                    && player_pos.x <= rect.top_right.x
+                    && player_pos.y >= rect.bottom_left.y
+                    && player_pos.y <= rect.top_right.y
+                {
+                    // insert PlayerInBuilding component
+                    commands
+                        .entity(player_entity)
+                        .insert(BuildingEntrance::NutritionHouse);
+                }
+            }
+        }
+    }
+}
+
+fn handle_player_entering_building(
+    player: Single<&BuildingEntrance, (With<Player>, Added<BuildingEntrance>)>,
+) {
+    let entrance = *player;
+    info!("Player has entered building: {:?}", entrance);
+}
+
 // --- Observers / Events ---
 
-// fn on_add_building_entrance(trigger: On<Add, BuildingEntrance>) {
-//     info!("Added BuildingEntrance component: {:?}", trigger.event());
-// }
 fn validate_and_snap_entrances(
     mut commands: Commands,
     // Added TiledObject to get width/height.
     // If your size data is in 'BuildingEntrance', access it there instead.
     query: Query<
         (Entity, &Transform, &BuildingEntrance, &TiledObject),
-        (Added<BuildingEntrance>, Without<TilePositionArray>),
+        (Added<BuildingEntrance>, Without<TileGroup>),
     >,
 ) {
     const TILE_SIZE: f32 = 32.0;
@@ -242,8 +289,8 @@ fn validate_and_snap_entrances(
 
         if dist_x >= EPSILON || dist_y >= EPSILON {
             panic!(
-                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nPosition: [x:{:.2}, y:{:.2}]\nIssue: Not aligned to {}-pixel grid.\n",
-                entrance.building_entrance, x, y, TILE_SIZE
+                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{:?}'\nPosition: [x:{:.2}, y:{:.2}]\nIssue: Not aligned to {}-pixel grid.\n",
+                entrance, x, y, TILE_SIZE
             );
         }
 
@@ -252,26 +299,25 @@ fn validate_and_snap_entrances(
         // Tiled objects usually store size in pixels
         let TiledObject::Rectangle { width, height } = tiled_object else {
             panic!(
-                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nIssue: Unsupported TiledObject type for size validation.\n",
-                entrance.building_entrance
+                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{:?}'\nIssue: Unsupported TiledObject type for size validation.\n",
+                entrance
             );
         };
 
         if width % TILE_SIZE != 0.0 || height % TILE_SIZE != 0.0 {
             panic!(
-                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{}'\nSize: [w:{}, h:{}]\nIssue: Dimensions are not multiples of tile size ({}).\n",
-                entrance.building_entrance, width, height, TILE_SIZE
+                "\n❌ MAP INTEGRITY ERROR ❌\nObject: '{:?}'\nSize: [w:{}, h:{}]\nIssue: Dimensions are not multiples of tile size ({}).\n",
+                entrance, width, height, TILE_SIZE
             );
         }
 
         // 3. Calculate All Occupied Tiles
         // ----------------------------------------------------
-        
+
         // Tiled 'Tile Objects' act as if their origin is Bottom-Left.
         // We subtract 'height' to shift the origin to the Top-Left (or the logic start).
         // TODO: somehow check `TilemapAnchor::BottomLeft` on the `TiledMap` to confirm this adjustment is needed.
         let adjusted_y = y - height;
-
 
         let start_grid_x = (x / TILE_SIZE).round() as u32;
         let start_grid_y = (adjusted_y / TILE_SIZE).round() as u32;
@@ -279,36 +325,20 @@ fn validate_and_snap_entrances(
         let width_in_tiles = (width / TILE_SIZE).round() as u32;
         let height_in_tiles = (height / TILE_SIZE).round() as u32;
 
-        let mut positions = Vec::with_capacity((width_in_tiles * height_in_tiles) as usize);
-
-        // Iterate through the dimensions to fill the vector
-        // NOTE: Tiled Y-coordinates can be tricky (Up vs Down).
-        // Standard 2D loops usually look like this:
-        for dx in 0..width_in_tiles {
-            for dy in 0..height_in_tiles {
-                positions.push(TilePosition {
-                    x: start_grid_x + dx,
-                    // Depending on your coordinate system (Y-Up vs Y-Down),
-                    // you might need `start_grid_y - dy` here.
-                    // Bevy is usually Y-Up, Tiled is Y-Down. Check your map loader settings.
-                    y: start_grid_y + dy,
-                });
-            }
-        }
-
-        info!(
-            "Snapping entrance '{}' to {} tiles starting at [{}, {}]",
-            entrance.building_entrance,
-            positions.len(),
-            start_grid_x,
-            start_grid_y
-        );
-        info!("Occupied Tiles: {:?}", positions);
+        let tile_group = TileGroup::Rectangle(RectangleTileGroup {
+            bottom_left: TilePosition {
+                x: start_grid_x,
+                y: start_grid_y,
+            },
+            top_right: TilePosition {
+                x: start_grid_x + width_in_tiles - 1,
+                y: start_grid_y + height_in_tiles - 1,
+            },
+        });
+        info!("Inserting TileGroup: {:?}", tile_group);
 
         // 4. Store the Array
-        commands
-            .entity(entity)
-            .insert(TilePositionArray { positions });
+        commands.entity(entity).insert(tile_group);
     }
 }
 

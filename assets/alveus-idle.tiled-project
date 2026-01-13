@@ -13,12 +13,13 @@
         {
             "color": "#ff000000",
             "drawFill": true,
-            "id": 1,
+            "id": 2,
             "members": [
                 {
-                    "name": "building_entrance",
+                    "name": ":variant",
+                    "propertyType": "alveus_idle::BuildingEntrance:::Variant",
                     "type": "string",
-                    "value": ""
+                    "value": "NutritionHouse"
                 }
             ],
             "name": "alveus_idle::BuildingEntrance",
@@ -26,6 +27,16 @@
             "useAs": [
                 "property"
             ]
+        },
+        {
+            "id": 3,
+            "name": "alveus_idle::BuildingEntrance:::Variant",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "NutritionHouse"
+            ],
+            "valuesAsFlags": false
         }
     ]
 }
