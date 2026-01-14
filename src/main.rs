@@ -35,7 +35,7 @@ struct MovementCooldown(Timer);
 #[derive(Component)]
 struct DisplayCurrentTile;
 
-#[derive(Component, Debug, Reflect, Default)]
+#[derive(Component, Debug, Reflect, Default, Clone, Copy)]
 #[reflect(Component, Default)]
 enum BuildingEntrance {
     #[default]
@@ -71,6 +71,7 @@ fn main() {
             (
                 move_player,
                 check_player_enter_building,
+                check_player_exit_building,
                 handle_player_entering_building,
                 update_current_tile_display,
                 update_player_transform,
@@ -103,14 +104,16 @@ fn setup_scene(
     // Spawn Player
     let initial_tile_position = TilePosition { x: 0, y: 0 };
 
-    commands.spawn((
-        Player,
-        initial_tile_position,
-        MovementCooldown(Timer::from_seconds(0.2, TimerMode::Once)),
-        Mesh2d(meshes.add(Circle::new(16.))),
-        MeshMaterial2d(materials.add(Color::srgb(0.3, 0.1, 0.9))),
-        Transform::from_xyz(0., 0., PLAYER_Z_INDEX),
-    ));
+    commands
+        .spawn((
+            Player,
+            initial_tile_position,
+            MovementCooldown(Timer::from_seconds(0.2, TimerMode::Once)),
+            Mesh2d(meshes.add(Circle::new(16.))),
+            MeshMaterial2d(materials.add(Color::srgb(0.3, 0.1, 0.9))),
+            Transform::from_xyz(0., 0., PLAYER_Z_INDEX),
+        ))
+        .observe(player_exiting_building_observer);
 
     // Spawn UI Debug Text
     commands.spawn((
@@ -221,6 +224,22 @@ fn update_player_transform(
     }
 }
 
+// TODO: derive EntityEvent maybe? what would be the target entity?
+#[derive(Debug, EntityEvent)]
+struct PlayerEnteredBuildingEvent {
+    entrance: BuildingEntrance,
+    #[event_target]
+    player: Entity,
+}
+
+// TODO: derive EntityEvent maybe? what would be the target entity?
+#[derive(Debug, EntityEvent)]
+struct PlayerExitedBuildingEvent {
+    entrance: BuildingEntrance,
+    #[event_target]
+    player: Entity,
+}
+
 /// check if player in building entrance
 fn check_player_enter_building(
     player: Single<
@@ -228,8 +247,33 @@ fn check_player_enter_building(
         (
             With<Player>,
             Changed<TilePosition>,
+            // TODO: should this be here? this component will be added in an observer, not this system directly. this creates some coupling.
             Without<BuildingEntrance>,
         ),
+    >,
+    entrance: Single<(&TileGroup, &BuildingEntrance)>,
+    mut commands: Commands,
+) {
+    let (player_pos, player_entity) = *player;
+
+    let (entrance_pos, entrance) = *entrance;
+    match entrance_pos {
+        TileGroup::Rectangle(rect) => {
+            if player_pos.x >= rect.bottom_left.x
+                && player_pos.x <= rect.top_right.x
+                && player_pos.y >= rect.bottom_left.y
+                && player_pos.y <= rect.top_right.y
+            {
+                commands.entity(player_entity).insert(*entrance);
+            }
+        }
+    }
+}
+
+fn check_player_exit_building(
+    player: Single<
+        (&TilePosition, Entity),
+        (With<Player>, Changed<TilePosition>, With<BuildingEntrance>),
     >,
     entrances: Query<(&TileGroup, &BuildingEntrance)>,
     mut commands: Commands,
@@ -244,10 +288,11 @@ fn check_player_enter_building(
                     && player_pos.y >= rect.bottom_left.y
                     && player_pos.y <= rect.top_right.y
                 {
-                    // insert PlayerInBuilding component
-                    commands
-                        .entity(player_entity)
-                        .insert(BuildingEntrance::NutritionHouse);
+                } else {
+                    commands.trigger(PlayerExitedBuildingEvent {
+                        entrance: *entrance,
+                        player: player_entity,
+                    });
                 }
             }
         }
@@ -255,10 +300,24 @@ fn check_player_enter_building(
 }
 
 fn handle_player_entering_building(
-    player: Single<&BuildingEntrance, (With<Player>, Added<BuildingEntrance>)>,
+    player: Single<(&BuildingEntrance, Entity), (With<Player>, Added<BuildingEntrance>)>,
+    mut commands: Commands,
 ) {
-    let entrance = *player;
-    info!("Player has entered building: {:?}", entrance);
+    let (entrance, entity) = *player;
+    info!("Player entered building: {:?}", entrance);
+    commands.trigger(PlayerEnteredBuildingEvent {
+        entrance: *entrance,
+        player: entity,
+    });
+}
+
+fn player_exiting_building_observer(
+    trigger: On<PlayerExitedBuildingEvent>,
+    mut commands: Commands,
+) {
+    let entity = trigger.event_target();
+    info!("Player exited building: {:?}", trigger.event().entrance);
+    commands.entity(entity).remove::<BuildingEntrance>();
 }
 
 // --- Observers / Events ---
