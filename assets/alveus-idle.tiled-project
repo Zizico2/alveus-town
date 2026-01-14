@@ -13,24 +13,24 @@
         {
             "color": "#ff000000",
             "drawFill": true,
-            "id": 4,
+            "id": 8,
             "members": [
                 {
                     "name": ":variant",
-                    "propertyType": "alveus_idle::BuildingEntrance:::Variant",
+                    "propertyType": "alveus_idle::components::BuildingEntrance:::Variant",
                     "type": "string",
                     "value": "NoEntrance"
                 }
             ],
-            "name": "alveus_idle::BuildingEntrance",
+            "name": "alveus_idle::components::BuildingEntrance",
             "type": "class",
             "useAs": [
                 "property"
             ]
         },
         {
-            "id": 5,
-            "name": "alveus_idle::BuildingEntrance:::Variant",
+            "id": 9,
+            "name": "alveus_idle::components::BuildingEntrance:::Variant",
             "storageType": "string",
             "type": "enum",
             "values": [

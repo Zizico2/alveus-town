@@ -1,7 +1,7 @@
 [
   {
     "id": 2,
-    "name": "alveus_idle::BuildingEntrance",
+    "name": "alveus_idle::components::BuildingEntrance",
     "type": "class",
     "useAs": [
       "property"
@@ -11,7 +11,7 @@
     "members": [
       {
         "name": ":variant",
-        "propertyType": "alveus_idle::BuildingEntrance:::Variant",
+        "propertyType": "alveus_idle::components::BuildingEntrance:::Variant",
         "type": "class",
         "value": "NoEntrance"
       }
@@ -19,7 +19,7 @@
   },
   {
     "id": 1,
-    "name": "alveus_idle::BuildingEntrance:::Variant",
+    "name": "alveus_idle::components::BuildingEntrance:::Variant",
     "type": "enum",
     "storageType": "string",
     "values": [
