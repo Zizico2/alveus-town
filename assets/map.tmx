@@ -171,7 +171,11 @@
  <objectgroup id="8" name="Terrain Metadata">
   <object id="6" x="1024" y="1120" width="128" height="64">
    <properties>
-    <property name="building_entrance" type="class" propertytype="alveus_idle::BuildingEntrance"/>
+    <property name="building_entrance" type="class" propertytype="alveus_idle::BuildingEntrance">
+     <properties>
+      <property name=":variant" propertytype="alveus_idle::BuildingEntrance:::Variant" value="NutritionHouse"/>
+     </properties>
+    </property>
    </properties>
   </object>
  </objectgroup>
