@@ -2,8 +2,7 @@ use bevy::prelude::*;
 use bevy_ecs_tiled::prelude::*;
 
 use crate::components::{
-    BuildingEntrance, GameplaySet, Player, PlayerSetupSet, RectangleTileGroup, TileGroup,
-    TilePosition,
+    BuildingEntrance, Player, PlayerMovementSet, PlayerSetupSet, RectangleTileGroup, TileGroup, TilePosition
 };
 
 pub struct EntrancePlugin;
@@ -25,7 +24,7 @@ impl Plugin for EntrancePlugin {
                     handle_player_entering_building,
                 )
                     .chain()
-                    .in_set(GameplaySet::PostMovement),
+                    .after(PlayerMovementSet),
             )
             .add_systems(
                 Startup,

@@ -1,43 +1,41 @@
 {
-    "automappingRulesFile": "",
-    "commands": [
-    ],
-    "compatibilityVersion": 1100,
-    "extensionsPath": "extensions",
-    "folders": [
-        "."
-    ],
-    "properties": [
-    ],
-    "propertyTypes": [
+  "automappingRulesFile": "",
+  "commands": [],
+  "compatibilityVersion": 1100,
+  "extensionsPath": "extensions",
+  "folders": [
+    "."
+  ],
+  "properties": [],
+  "propertyTypes": [
+    {
+      "color": "#000000",
+      "drawFill": true,
+      "id": 2,
+      "members": [
         {
-            "color": "#ff000000",
-            "drawFill": true,
-            "id": 8,
-            "members": [
-                {
-                    "name": ":variant",
-                    "propertyType": "alveus_idle::components::BuildingEntrance:::Variant",
-                    "type": "string",
-                    "value": "NoEntrance"
-                }
-            ],
-            "name": "alveus_idle::components::BuildingEntrance",
-            "type": "class",
-            "useAs": [
-                "property"
-            ]
-        },
-        {
-            "id": 9,
-            "name": "alveus_idle::components::BuildingEntrance:::Variant",
-            "storageType": "string",
-            "type": "enum",
-            "values": [
-                "NoEntrance",
-                "NutritionHouse"
-            ],
-            "valuesAsFlags": false
+          "name": ":variant",
+          "propertyType": "alveus_idle::components::BuildingEntrance:::Variant",
+          "type": "class",
+          "value": "NoEntrance"
         }
-    ]
+      ],
+      "name": "alveus_idle::components::BuildingEntrance",
+      "type": "class",
+      "useAs": [
+        "property"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "alveus_idle::components::BuildingEntrance:::Variant",
+      "storageType": "string",
+      "type": "enum",
+      "values": [
+        "NoEntrance",
+        "NutritionHouse"
+      ],
+      "valuesAsFlags": false
+    }
+  ]
 }

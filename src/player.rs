@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::components::{
-    GameplaySet, MovementCooldown, PLAYER_Z_INDEX, Player, PlayerSetupSet, TILE_SIZE, TilePosition,
+    PlayerMovementSet, MovementCooldown, PLAYER_Z_INDEX, Player, PlayerSetupSet, TILE_SIZE, TilePosition,
 };
 
 pub struct PlayerPlugin;
@@ -13,7 +13,7 @@ impl Plugin for PlayerPlugin {
                 Update,
                 (move_player, update_player_transform)
                     .chain()
-                    .in_set(GameplaySet::Movement),
+                    .in_set(PlayerMovementSet),
             );
     }
 }

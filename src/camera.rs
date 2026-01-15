@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::components::{GameplaySet, Player};
+use crate::components::{PlayerMovementSet, Player};
 
 const CAMERA_DECAY_RATE: f32 = 2.0;
 
@@ -9,7 +9,7 @@ pub struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_camera)
-            .add_systems(Update, update_camera.in_set(GameplaySet::PostMovement));
+            .add_systems(Update, update_camera.after(PlayerMovementSet));
     }
 }
 

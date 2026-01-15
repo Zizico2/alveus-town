@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 
-use crate::components::{DisplayCurrentTile, GameplaySet, Player, TilePosition};
+use crate::components::{DisplayCurrentTile, Player, PlayerMovementSet, TilePosition};
 
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (spawn_tile_display, spawn_instructions))
-            .add_systems(Update, update_current_tile_display.in_set(GameplaySet::PostMovement));
+            .add_systems(Update, update_current_tile_display.after(PlayerMovementSet));
     }
 }
 

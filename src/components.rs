@@ -4,10 +4,7 @@ pub const TILE_SIZE: u32 = 32;
 pub const PLAYER_Z_INDEX: f32 = 2.0;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
-pub enum GameplaySet {
-    Movement,
-    PostMovement,
-}
+pub struct PlayerMovementSet;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub struct PlayerSetupSet;

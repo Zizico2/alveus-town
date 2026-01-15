@@ -1,8 +1,7 @@
 use std::path::PathBuf;
 
 use bevy::prelude::*;
-use bevy_ecs_tiled::prelude::*;
-use regex::RegexSet;
+use bevy_ecs_tiled::prelude::{regex::RegexSet, *};
 
 use crate::components::BuildingEntrance;
 
@@ -23,7 +22,12 @@ impl Plugin for MapPlugin {
         app.add_plugins(TiledPlugin(TiledPluginConfig {
             tiled_types_export_file: Some(self.tiled_types_path.clone()),
             // Filter out internal Bevy components to keep the Tiled export clean
-            tiled_types_filter: TiledFilter::from(RegexSet::new([r"^alveus_idle::components::.*"]).unwrap()),
+            // tiled_types_filter: TiledFilter::Names(vec![
+            //     "alveus_idle::components::BuildingEntrance".into(),
+            // ]),
+            tiled_types_filter: TiledFilter::from(
+                RegexSet::new([r"^alveus_idle::components::.*"]).unwrap(),
+            ),
         }))
         .add_systems(Startup, spawn_map)
         .add_observer(on_map_created);
