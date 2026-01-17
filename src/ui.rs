@@ -65,7 +65,6 @@ fn player_entering_building_observer(
     mut commands: Commands,
     asset_server: ResMut<AssetServer>,
 ) {
-    // 1. Define the Tween using UiPositionLens
     let slide_up_tween = Tween::new(
         EaseFunction::CubicOut,
         Duration::from_millis(3000),
@@ -88,15 +87,12 @@ fn player_entering_building_observer(
     commands.spawn((
         Node {
             position_type: PositionType::Absolute,
-            // The Animator will immediately overwrite these, but good practice to match start
             bottom: Val::Px(-150.0),
             left: Val::Px(12.0),
-            // flex_direction: FlexDirection::Column,
             width: Val::Px(150.0),
             height: Val::Px(100.0),
             ..default()
         },
-        // 2. Add the Animator
         TweenAnim::new(slide_up_tween),
         ImageNode {
             image: asset_server.load("enter_building_toast.png"),
