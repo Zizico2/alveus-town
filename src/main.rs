@@ -6,6 +6,7 @@ mod player;
 mod ui;
 
 use bevy::prelude::*;
+use bevy_tweening::TweeningPlugin;
 use serde_json::Value;
 use std::{env, fs::File, io::BufReader};
 
@@ -33,6 +34,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .register_type::<components::BuildingEntrance>()
+        .add_plugins(TweeningPlugin)
         .add_plugins(MapPlugin::new(tiled_types_path))
         .add_plugins(player::PlayerPlugin)
         .add_plugins((entrance::EntrancePlugin, camera::CameraPlugin, ui::UiPlugin))

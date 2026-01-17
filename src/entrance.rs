@@ -30,27 +30,26 @@ impl Plugin for EntrancePlugin {
             .add_systems(
                 Startup,
                 (|player: Single<Entity, With<Player>>, mut commands: Commands| {
-                    commands
-                        .entity(*player)
-                        .observe(player_exiting_building_observer);
+                    commands.entity(*player);
                 })
                 .after(PlayerSetupSet),
-            );
+            )
+            .add_observer(player_exiting_building_observer);
     }
 }
 
-#[derive(Debug, EntityEvent)]
+#[derive(Debug, Event)]
 pub struct PlayerEnteredBuildingEvent {
     pub entrance: BuildingEntrance,
-    #[event_target]
-    pub player: Entity,
+    // #[event_target]
+    // pub player: Entity,
 }
 
-#[derive(Debug, EntityEvent)]
+#[derive(Debug, Event)]
 pub struct PlayerExitedBuildingEvent {
     pub entrance: BuildingEntrance,
-    #[event_target]
-    pub player: Entity,
+    // #[event_target]
+    // pub player: Entity,
 }
 
 /// Check if the player is within a building entrance and attach the marker component.
@@ -103,7 +102,7 @@ fn check_player_exit_building(
                 if !inside {
                     commands.trigger(PlayerExitedBuildingEvent {
                         entrance: *entrance,
-                        player: player_entity,
+                        // player: player_entity,
                     });
                 }
             }
@@ -119,15 +118,16 @@ fn handle_player_entering_building(
     info!("Player entered building: {:?}", entrance);
     commands.trigger(PlayerEnteredBuildingEvent {
         entrance: *entrance,
-        player: entity,
+        // player: entity,
     });
 }
 
 fn player_exiting_building_observer(
     trigger: On<PlayerExitedBuildingEvent>,
+    player: Single<Entity, With<Player>>,
     mut commands: Commands,
 ) {
-    let entity = trigger.event_target();
+    let entity = player.entity();
     info!("Player exited building: {:?}", trigger.event().entrance);
     commands.entity(entity).remove::<BuildingEntrance>();
 }
