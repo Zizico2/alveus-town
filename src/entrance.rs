@@ -2,7 +2,8 @@ use bevy::prelude::*;
 use bevy_ecs_tiled::prelude::*;
 
 use crate::components::{
-    BuildingEntrance, Player, PlayerMovementSet, PlayerSetupSet, RectangleTileGroup, TileGroup, TilePosition
+    BuildingEntrance, Player, PlayerMovementSet, PlayerSetupSet, RectangleTileGroup, TileGroup,
+    TilePosition,
 };
 
 pub struct EntrancePlugin;

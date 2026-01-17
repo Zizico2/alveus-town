@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::components::{PlayerMovementSet, Player};
+use crate::components::{Player, PlayerMovementSet};
 
 const CAMERA_DECAY_RATE: f32 = 2.0;
 

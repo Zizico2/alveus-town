@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 
 use crate::components::{
-    PlayerMovementSet, MovementCooldown, PLAYER_Z_INDEX, Player, PlayerSetupSet, TILE_SIZE, TilePosition,
+    MovementCooldown, PLAYER_Z_INDEX, Player, PlayerMovementSet, PlayerSetupSet, TILE_SIZE,
+    TilePosition,
 };
 
 pub struct PlayerPlugin;
