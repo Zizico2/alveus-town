@@ -23,42 +23,69 @@ impl Plugin for UiPlugin {
         // TODO: move this to a separate plugin
 
         app.add_observer(player_entering_building_observer)
-            .add_observer(player_exiting_building_observer);
+            .add_observer(player_exiting_building_observer)
+            .add_observer(despawn_toast_on_completion);
     }
 }
+
+#[derive(Component)]
+struct BuildingEntranceToastMarker;
+
+#[derive(Component)]
+struct BuildingEntranceToastDismissalMarker;
 
 fn player_exiting_building_observer(
     trigger: On<PlayerExitedBuildingEvent>,
     mut commands: Commands,
+    // Query the existing toast using the Marker
+    toast_query: Single<(Entity, &Node), With<BuildingEntranceToastMarker>>,
 ) {
+    let (toast_identity, toast_node) = *toast_query;
+
+    let start_rect = UiRect {
+        left: toast_node.left,
+        right: toast_node.right,
+        top: toast_node.top,
+        bottom: toast_node.bottom,
+    };
+
+    // Create the Slide Down (Exit) Tween
+    let slide_down_tween = Tween::new(
+        EaseFunction::CubicIn,
+        Duration::from_millis(500),
+        UiPositionLens {
+            // Start where the "entering" ended
+            start: start_rect,
+            // End off-screen
+            end: UiRect {
+                bottom: Val::Px(-150.0),
+                left: Val::Px(12.0),
+                ..default()
+            },
+        },
+    )
+    // IMPORTANT: Trigger an event when this specific tween finishes
+    ;
+
+    // Insert the new Animator. This overwrites the previous one,
+    // effectively cancelling the old animation and starting the exit.
+    commands.entity(toast_identity).insert((
+        TweenAnim::new(slide_down_tween),
+        BuildingEntranceToastDismissalMarker,
+    ));
 }
 
-// fn player_entering_building_observer(
-//     trigger: On<PlayerEnteredBuildingEvent>,
-//     mut commands: Commands,
-//     asset_server: ResMut<AssetServer>,
-// ) {
-//     commands
-//         .spawn((Node {
-//             position_type: PositionType::Absolute,
-//             bottom: px(12),
-//             left: px(12),
-//             flex_direction: FlexDirection::Column,
-//             ..default()
-//         },))
-//         .with_children(|builder| {
-//             builder.spawn((
-//                 ImageNode {
-//                     image: asset_server.load("enter_building_toast.png"),
-//                     ..default()
-//                 },
-//                 Node {
-//                     width: px(150),
-//                     ..default()
-//                 },
-//             ));
-//         });
-// }
+// 4. Cleanup System (Observer)
+// This listens for the TweenCompleted event to despawn the entity
+fn despawn_toast_on_completion(
+    trigger: On<AnimCompletedEvent>,
+    mut commands: Commands,
+    query: Query<Entity, With<BuildingEntranceToastDismissalMarker>>,
+) {
+    if query.get(trigger.anim_entity).is_ok() {
+        commands.entity(trigger.anim_entity).despawn();
+    }
+}
 
 fn player_entering_building_observer(
     trigger: On<PlayerEnteredBuildingEvent>,
@@ -93,6 +120,7 @@ fn player_entering_building_observer(
             height: Val::Px(100.0),
             ..default()
         },
+        BuildingEntranceToastMarker,
         TweenAnim::new(slide_up_tween),
         ImageNode {
             image: asset_server.load("enter_building_toast.png"),
