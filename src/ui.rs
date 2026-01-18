@@ -37,7 +37,6 @@ struct BuildingEntranceToastDismissalMarker;
 fn player_exiting_building_observer(
     trigger: On<PlayerExitedBuildingEvent>,
     mut commands: Commands,
-    // Query the existing toast using the Marker
     toast_query: Single<(Entity, &Node), With<BuildingEntranceToastMarker>>,
 ) {
     let (toast_identity, toast_node) = *toast_query;
@@ -49,7 +48,6 @@ fn player_exiting_building_observer(
         bottom: toast_node.bottom,
     };
 
-    // Create the Slide Down (Exit) Tween
     let slide_down_tween = Tween::new(
         EaseFunction::CubicIn,
         Duration::from_millis(500),
@@ -63,20 +61,14 @@ fn player_exiting_building_observer(
                 ..default()
             },
         },
-    )
-    // IMPORTANT: Trigger an event when this specific tween finishes
-    ;
+    );
 
-    // Insert the new Animator. This overwrites the previous one,
-    // effectively cancelling the old animation and starting the exit.
     commands.entity(toast_identity).insert((
         TweenAnim::new(slide_down_tween),
         BuildingEntranceToastDismissalMarker,
     ));
 }
 
-// 4. Cleanup System (Observer)
-// This listens for the TweenCompleted event to despawn the entity
 fn despawn_toast_on_completion(
     trigger: On<AnimCompletedEvent>,
     mut commands: Commands,
@@ -90,9 +82,40 @@ fn despawn_toast_on_completion(
 fn player_entering_building_observer(
     trigger: On<PlayerEnteredBuildingEvent>,
     mut commands: Commands,
+    toast: Option<Single<(Entity, &Node), With<BuildingEntranceToastMarker>>>,
     asset_server: ResMut<AssetServer>,
 ) {
-    let slide_up_tween = Tween::new(
+    let end = UiRect {
+        bottom: Val::Px(12.0),
+        left: Val::Px(12.0),
+        top: Val::Auto,
+        right: Val::Auto,
+    };
+
+    if let Some(toast) = toast {
+        let (toast_entity, toast_node) = *toast;
+        let tween = Tween::new(
+            EaseFunction::CubicOut,
+            Duration::from_millis(500),
+            UiPositionLens {
+                start: UiRect {
+                    left: toast_node.left,
+                    right: toast_node.right,
+                    top: toast_node.top,
+                    bottom: toast_node.bottom,
+                },
+                end,
+            },
+        );
+        commands
+            .entity(toast_entity)
+            .insert(TweenAnim::new(tween))
+            .remove::<BuildingEntranceToastDismissalMarker>();
+
+        return;
+    }
+
+    let tween = Tween::new(
         EaseFunction::CubicOut,
         Duration::from_millis(500),
         UiPositionLens {
@@ -102,12 +125,7 @@ fn player_entering_building_observer(
                 top: Val::Auto,
                 right: Val::Auto,
             },
-            end: UiRect {
-                bottom: Val::Px(12.0),
-                left: Val::Px(12.0),
-                top: Val::Auto,
-                right: Val::Auto,
-            },
+            end,
         },
     );
 
@@ -121,7 +139,7 @@ fn player_entering_building_observer(
             ..default()
         },
         BuildingEntranceToastMarker,
-        TweenAnim::new(slide_up_tween),
+        TweenAnim::new(tween),
         ImageNode {
             image: asset_server.load("enter_building_toast.png"),
             ..default()
