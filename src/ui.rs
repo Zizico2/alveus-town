@@ -94,7 +94,7 @@ fn player_entering_building_observer(
 ) {
     let slide_up_tween = Tween::new(
         EaseFunction::CubicOut,
-        Duration::from_millis(3000),
+        Duration::from_millis(500),
         UiPositionLens {
             start: UiRect {
                 bottom: Val::Px(-150.0),

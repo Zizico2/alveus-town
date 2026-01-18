@@ -8,3 +8,9 @@ bevy = "0.17.0"
 bevy_ecs_tiled = {version = "0.10.0", features = ["user_properties"]}
 bevy_tweening = "0.14.0"
 serde_json = "1.0.149"
+
+# release profile
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
